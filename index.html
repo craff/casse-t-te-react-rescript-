@@ -6,9 +6,18 @@
 	<link rel="stylesheet" type="text/css" href="index.css">
     </head>
     <body>
+      <script>
+	function disableAll() {
+	    document.getElementById("overlay").style.display="block";
+	}
+	function enableAll() {
+	    document.getElementById("overlay").style.display="none";
+	}
+      </script>
+
         <script type="module" src="/src/index.bs.js"></script>
+	<div id="overlay"></div>
         <h1>Un casse tête coréen</h1>
-        <div id="root">
-	</div>
+        <div id="root"/>
     </body>
 </html>

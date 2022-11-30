@@ -2,14 +2,14 @@
     "name": "casse-tete",
     "version": "0.0.1",
     "keywords": [],
-    "main": "src/index.js",
     "author": "",
     "license": "FREE",
     "type": "module",
+    "main": "src/index.res",
     "scripts": {
         "build": "rescript build -with-deps",
         "clean": "rescript clean -with-deps",
-        "test": "node src/TestExpr.bs.js",
+        "test": "node src/TestInterval.bs.js && node src/TestExpr.bs.js",
         "dev": "vite"
     },
     "dependencies": {

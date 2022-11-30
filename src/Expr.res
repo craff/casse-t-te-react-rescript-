@@ -37,8 +37,6 @@ let stackToString = (list) => {
   }
 
 // evaluation of an expresion using a dictionnay to give the value of variables
-exception BadDiv // raised if a division is not exact
-
 let rec eval = (expr, env) => {
   open Belt.Map.String
   switch expr {
@@ -50,10 +48,26 @@ let rec eval = (expr, env) => {
    | Sub(e1,e2) => eval(e1, env) - eval(e2, env)
    | Mul(e1,e2) => eval(e1, env) * eval(e2, env)
    | Div(e1,e2) => { let r1 = eval(e1, env) and r2 = eval(e2, env)
-                     if (mod(r1, r2) != 0) { raise(BadDiv) }
+                     if (mod(r1, r2) != 0) { raise(Interval.BadDiv) }
                      r1 / r2
 		   }
   }}
+
+let iEval = (expr, env, full) => {
+  open Interval
+  open Belt.Map.String
+  let rec eval = expr => {
+  switch expr {
+   | Var(v)     => switch get(env,v) {
+                   | None    => full
+                   | Some(n) => (n,n) }
+   | Cst(n)     => (n,n)
+   | Add(e1,e2) => iAdd(eval(e1), eval(e2))
+   | Sub(e1,e2) => iSub(eval(e1), eval(e2))
+   | Mul(e1,e2) => iMul(eval(e1), eval(e2))
+   | Div(e1,e2) => iDiv(eval(e1), eval(e2))
+  }}
+  eval(expr)}
 
 // an equation is just a pair of expressions
 type equation = (expr,expr)
@@ -62,7 +76,7 @@ type equation = (expr,expr)
 let check = ((e1,e2), env) =>
   switch (eval(e1,env) == eval(e2,env)) {
   | b                            => b
-  | exception (Not_found | BadDiv) => false
+  | exception (Not_found | Interval.BadDiv) => false
   }
 
 // get the list of all variables in an expression
@@ -78,9 +92,7 @@ let rec get_variables = (expr) => {
   }}
 
 // solve an equation.
-// TODO: This is a dumb algorithm trying all possibilities.
-//       One way to improve is detect symmetries in solutions using
-//       commutativity and associativity
+// Naive solve
 let solve = (eqn,domain) => {
   open Belt.Set.String
   module I = Belt.Set.Int
@@ -109,104 +121,45 @@ let solve = (eqn,domain) => {
   Belt.List.toArray (fn (list{},domain,vars,M.empty))
 }
 
-// Code for parsing expressions,
-// deal with spaces and parenthesis.
-// Accept positive integer constants
-// Accept [a-zA-Z_][a-zA-Z0-9_]* as variables
-// Accept parenthesis, +, -, *, / with usual priorities
-// lack unary minus
+// solve an equation, using arithmetic interval to detect
+// early failure. Basically it detects two cases:
+// - The left member and right member do not overlap
+// - Some division will fail
+let iSolve = (eqn,domain) => {
+  open Belt.Set.String
+  module I = Belt.Set.Int
+  module M = Belt.Map.String
+  let (e1,e2) = eqn
+  let vars = union(get_variables(e1),get_variables(e2))
+  let rec fn = (solutions, domain, vars, env) => {
+    switch vars->minimum {
+      | None =>
+        // no more variables we check if we found a solution
+        switch check(eqn,env) {
+        | true  => list{env, ... solutions}
+        | false => solutions
+        | exception Not_found => assert(false)
+        }
+      | Some(v) =>
+        // we try all remaining value in the domain
+        let vars = vars->remove(v)
+        domain->I.reduce(solutions, (solutions,x) => {
+	  let domain = domain->I.remove(x)
+	  let env = env->M.set(v,x)
+          switch (domain->I.minimum, domain->I.maximum) {
+	  | (Some(a), Some(b)) => {
+	      let full = (a,b)
+  	      switch (iEval(e1,env,full), iEval(e2,env,full)) {
+              | ((a,b),(c,d)) => {
+    	          if b < c || d < a { solutions }
+ 	          else { fn(solutions,domain,vars,env) }
+		}
 
-exception Parse_error(int)
-
-let digitAt = (pos,str) => {
-  open Js.String
-  switch codePointAt(pos,str) {
-  | Some(n) => n - 48
-  | None    => raise(Parse_error(pos))
-  }
-}
-
-// return position ater the blanks, starting at pos
-let rec ignoreBlank = (pos,str) => {
-  open Js.String
-  if charAt(pos,str) == " " { ignoreBlank(pos+1,str) } else { pos }
-}
-
-let isDigit = (c) => c >= "0" && c <= "9"
-let isAlpha = (c) => (c >= "a" && c <= "z")
-                  || (c >= "A" && c <= "Z")
-		  || c == "_"
-
-// parse an integer from pos. returns that integer and the position after
-let parseInt = (pos,str) => {
-  open Js.String
-  let rec gn = (pos,n) => {
-    let c = charAt(pos,str)
-    if isDigit(c) {
-      let d = digitAt(pos,str)
-      gn(pos+1,n*10+d)
-    } else { (n,pos) }
-  }
-  gn(pos,0)
-}
-
-// parse a variable from pos. returns that integer and the position after
-let parseVar = (pos0,str) => {
-  open Js.String
-  let rec gn = (pos) => {
-    let c = charAt(pos,str)
-    if isAlpha(c) || (pos > pos0 && isDigit(c)) {
-      gn(pos+1)
-    } else { pos }
-  }
-  let pos1 = gn(pos0)
-  (Js.String.substring(~from=pos0,~to_=pos1, str), pos1)
-}
-
-// parse an expression. Simple recursive algorithm using a stack.
-// NOTE: a bit limited if one wants to add unary minus, we would need real
-// parsing and lexing library.
-let parse = (str) => {
-  open Js.String
-  let rec fn = (pos,stack,prio) => {
-    let pos = ignoreBlank(pos,str)
-    if pos >= length(str) { (stack,pos) } else {
-    let c = charAt(pos,str)
-    switch (c,stack) {
-    | (c,stack) if isDigit(c) =>
-       let (n, pos) = parseInt(pos,str)
-       fn(pos, list{Cst(n),...stack}, prio)
-    | (c,stack) if isAlpha(c) =>
-       fn(pos+1, list{Var(c),...stack}, prio)
-    | ("+",list{e1,...stack}) if prio >= Sum =>
-       switch (fn (pos+1,stack,Pro)) {
-       | (list{e2,...stack},pos) => fn(pos,list{Add(e1,e2),...stack},prio)
-       | (_,pos)                 => raise (Parse_error(pos))}
-    | ("-",list{e1,...stack}) if prio >= Sum =>
-       switch (fn (pos+1,stack,Pro)) {
-       | (list{e2,...stack},pos) => fn(pos,list{Sub(e1,e2),...stack},prio)
-       | (_,pos)                 => raise (Parse_error(pos))}
-    | ("*",list{e1,...stack}) if prio >= Pro =>
-       switch (fn (pos+1,stack,Atm)) {
-       | (list{e2,...stack},pos) => fn(pos,list{Mul(e1,e2),...stack},prio)
-       | (_,pos)                 => raise (Parse_error(pos))}
-    | ("/",list{e1,...stack}) if prio >= Pro =>
-       switch (fn (pos+1,stack,Atm)) {
-       | (list{e2,...stack},pos) => fn(pos,list{Div(e1,e2),...stack},prio)
-       | (_,pos)                 => raise (Parse_error(pos))}
-    | ("(",stack) =>
-       switch (fn (pos+1,stack,Sum)) {
-       | (stack,pos) =>
-          let pos = ignoreBlank(pos,str)
-	  let c = charAt(pos,str)
-	  if (c != ")") { raise(Parse_error(pos)) }
-          fn(pos+1,stack,prio)
-       }
-    | _ =>
-       (stack,pos)
+              | exception Interval.BadDiv => solutions }
+	    }
+	  | _ => fn(solutions,domain,vars,env) }
+	})
+      }
     }
-  }}
-  switch fn(0,list{},Sum) {
-  | (list{e},pos) if pos >= length(str) => e
-  | (stack,pos)                         => Js.log(stack); raise(Parse_error(pos))
-  }}
+  Belt.List.toArray (fn (list{},domain,vars,M.empty))
+}

@@ -8,17 +8,24 @@ button {
     margin:2em 0.5em;
 }
 
-
 .cell {
     border-width: 1px;
     border-style: solid;
     display: inline-block;
-    width:2em;
+    min-width:2em;
     height:2.5ex;
     padding:3px;
     text-align:center;
     background-color:#B0B0B0;
 }
 
-.expr {
+#overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 999;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
 }
