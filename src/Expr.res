@@ -37,6 +37,8 @@ let stackToString = (list) => {
   }
 
 // evaluation of an expresion using a dictionnay to give the value of variables
+exception BadDiv // raised if a division is not exact
+
 let rec eval = (expr, env) => {
   open Belt.Map.String
   switch expr {
@@ -47,7 +49,10 @@ let rec eval = (expr, env) => {
    | Add(e1,e2) => eval(e1, env) + eval(e2, env)
    | Sub(e1,e2) => eval(e1, env) - eval(e2, env)
    | Mul(e1,e2) => eval(e1, env) * eval(e2, env)
-   | Div(e1,e2) => eval(e1, env) / eval(e2, env)
+   | Div(e1,e2) => { let r1 = eval(e1, env) and r2 = eval(e2, env)
+                     if (mod(r1, r2) != 0) { raise(BadDiv) }
+                     r1 / r2
+		   }
   }}
 
 // an equation is just a pair of expressions
@@ -56,8 +61,8 @@ type equation = (expr,expr)
 // test if an equation holds in the give environment
 let check = ((e1,e2), env) =>
   switch (eval(e1,env) == eval(e2,env)) {
-  | b                   => b
-  | exception Not_found => false
+  | b                            => b
+  | exception (Not_found | BadDiv) => false
   }
 
 // get the list of all variables in an expression
