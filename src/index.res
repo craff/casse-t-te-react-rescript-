@@ -6,28 +6,45 @@ module Button = {
     let make = (~onClick, ~text) =>
     <button onClick> {React.string(text)} </button>
 }
+module MaxSol = {
+   @react.component
+   let make = (~get,~init) => {
+     let (text, setText) = React.useState(_ => Belt.Int.toString(init));
+     let onChange = evt => {
+       ReactEvent.Form.preventDefault(evt)
+       let value = ReactEvent.Form.target(evt)["value"]
+       setText(_prev => value);
+     }
+     let elt = <input onChange id="maxsol" value=text type_="number"/>
+     get := (() => switch Belt.Int.fromString(text) {
+                   | None    => 50
+		   | Some(n) => n })
+     elt
+   }
+}
+
 
 @val external enableAll: unit => unit = "enableAll"
 @val external disableAll: unit => unit = "disableAll"
 
 exception Bad(string)
 
+let rootElt   = ReactDOM.querySelector("#root")
+
 let rec setPuzzle = ((exp1,exp2) as eqn) => {
-  let resultElt = ReactDOM.querySelector("#result")
-  let rootElt   = ReactDOM.querySelector("#root")
   let (puzzle,inputs) = HtmlExpr.toHtml(exp1,exp2)
 
-  let setResult = text =>
-    switch resultElt {
+  let setResult = text => {
+    switch ReactDOM.querySelector("#result") {
     | Some(elt) => ReactDOM.render(React.string(text),elt)
     | None => () // do nothing
-  }
+  }}
 
-  let setCenter = nb =>
-    switch resultElt {
+  let setCenter = nb => {
+    switch ReactDOM.querySelector("#center") {
     | Some(elt) => ReactDOM.render(React.string(Js.Int.toString(nb) ++ " problèmes testés"),elt)
     | None => () // do nothing
-  }
+  }}
 
   let solvePuzzle = (_event) => {
     let t0 = Js.Date.make()
@@ -67,14 +84,20 @@ let rec setPuzzle = ((exp1,exp2) as eqn) => {
     }
   }
 
+  let getMaxSol = ref (() => 50)
+
   let newPuzzle = (_event) => {
     disableAll()
     let count = ref(0)
-    let callback = (nb) => count := nb
-    Js.Global.setTimeout((() => Puzzle.generate(~maxsol=50,~callback,13,9)->Js.Promise.then_(eqn => {
+    let callback = (nb) => {setCenter(count.contents); count := nb}
+    let t0 = Js.Date.getTime(Js.Date.make())
+    let maxsol = getMaxSol.contents()
+    Js.Global.setTimeout((() => Puzzle.generate(~maxsol,~callback,13,9)->Js.Promise.then_(eqn => {
       setPuzzle(eqn)
       enableAll()
-      setCenter(count.contents)
+      let t1 = Js.Date.getTime(Js.Date.make())
+      setResult(Js.Int.toString(count.contents) ++ " problèmes testés en " ++
+                   Js.Float.toString(t1 -. t0) ++ "ms")
       Js.Promise.resolve(())
     }, _) -> ignore), 10)->ignore
   }
@@ -83,11 +106,14 @@ let rec setPuzzle = ((exp1,exp2) as eqn) => {
     <div>
       <div className="header">
         <Button onClick=check text="teste ma solution"/>
-        <Button onClick=newPuzzle text="genère un nouveau problème"/>
+        <Button onClick=newPuzzle text="genère un nouveau problème avec un nombre de solution \u2264 "/>
+	<MaxSol init=50 get=getMaxSol/>
         <Button onClick=solvePuzzle text="résoud automatiquement"/>
-        <span id="result"></span>
       </div>
       {puzzle}
+      <div className="footer">
+        <span id="result"></span>
+      </div>
     </div>
 
   switch rootElt {

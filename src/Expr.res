@@ -121,22 +121,32 @@ let solve = (eqn,domain) => {
   Belt.List.toArray (fn (list{},domain,vars,M.empty))
 }
 
+exception Abort
+
 // solve an equation, using arithmetic interval to detect
 // early failure. Basically it detects two cases:
 // - The left member and right member do not overlap
 // - Some division will fail
-let iSolve = (eqn,domain) => {
+// - we interrupt with exception Abort is maxsol is given
+//   this is used when building problems.
+let iSolve = (~maxsol=?,eqn,domain) => {
   open Belt.Set.String
   module I = Belt.Set.Int
   module M = Belt.Map.String
   let (e1,e2) = eqn
   let vars = union(get_variables(e1),get_variables(e2))
+  let nbSol = ref(0)
   let rec fn = (solutions, domain, vars, env) => {
     switch vars->minimum {
       | None =>
         // no more variables we check if we found a solution
         switch check(eqn,env) {
-        | true  => list{env, ... solutions}
+        | true  => switch maxsol {
+	           | None => ()
+		   | Some(n) => nbSol := nbSol.contents + 1
+		                if nbSol.contents > n { raise(Abort) }
+                   }
+	           list{env, ... solutions}
         | false => solutions
         | exception Not_found => assert(false)
         }
