@@ -56,13 +56,27 @@ let rootElt   = {
 }
 
 // get the center element of the overlay
-let centerElt   = {
+let overlayElt   = {
   open ReactDOM
-  switch querySelector("#center") {
+  switch querySelector("#overlay") {
   | None => assert(false)
   | Some(root) => Client.createRoot(root)
   }
 }
+
+// the text holding the various message of the page
+let (centerElt, setCenter) = {
+  let set = ref (_ => assert false)
+  let elt = <Text init="" id="centerText" set/>
+  (elt, n => set.contents(Js.Int.toString(n)))
+}
+
+overlayElt->ReactDOM.Client.Root.render(
+  <div id="center" >
+    <div>{centerElt}</div>
+    <div><Button onClick={Puzzle.cancel} text="interrompt"/></div>
+  </div>
+ )
 
 // main function creating the puzzle
 let rec setPuzzle = problem => {
@@ -77,13 +91,6 @@ let rec setPuzzle = problem => {
     let set = ref (_ => assert false)
     let elt = <Text id="result" init="" set/>
     (elt, text => set.contents(text))
-  }
-
-  // A function to set the text at the center of the overlay
-  // during problem generation
-  let setCenter = nb => {
-    centerElt->ReactDOM.Client.Root.render(
-      React.string(Js.Int.toString(nb) ++ " problèmes testés"))
   }
 
   // callback to the solve puzzle
@@ -153,7 +160,10 @@ let rec setPuzzle = problem => {
     // Puzzle.generate is a promise that call timeout not to block the
     // navigator.
     generate(~maxsol,~callback,13,9)->Js.Promise.then_(problem => {
-      setPuzzle(problem)
+      switch problem {
+        | None => ()
+        | Some(problem) => setPuzzle(problem)
+      }
       enableAll()
       let t1 = Js.Date.getTime(Js.Date.make())
       setResult(Js.Int.toString(count.contents) ++ " problèmes testés en " ++

@@ -42,12 +42,15 @@ let sleep : int => promise<unit> = async ms => {
   await promise
 }
 
+let cancelled = ref(false)
+let cancel = _ => cancelled := true
 
 // generates a problem using all integer for 1 to size,
 // integer from 1 to m, must be guessed by the player
 // optionally, maxsol is the maximum number of solutions
 // callback maybe used to display the number of problems explored
-let generate : (~maxsol:int=?, ~callback:(int=>unit)=?,int,int) => promise<problem>
+let generate : (~maxsol:int=?, ~callback:(int=>unit)=?,int,int)
+               => promise<option<problem>>
              = async (~maxsol=?,~callback=?,size,m) => {
   let domain = Belt.Set.Int.fromArray(Belt.Array.makeBy(m, (i => i+1)))
   // we choose a random order of the integer from 1 to size
@@ -96,10 +99,11 @@ let generate : (~maxsol:int=?, ~callback:(int=>unit)=?,int,int) => promise<probl
   // loop using async and sleep until we find an acceptable problems
   let count = ref(0)
   let rec fn = async () =>
-    switch do_one () {
-    | Some(eqn) => // Hourah: we found a solution
-       eqn
-    | None =>
+    switch (cancelled.contents, do_one ()) {
+    | (true, _)      => cancelled := false; None
+    | (_, Some(eqn)) => // Hourah: we found a solution
+       Some(eqn)
+    | (_, None)      =>
        count := count.contents + 1
        switch callback {
        | None => ()
@@ -108,6 +112,9 @@ let generate : (~maxsol:int=?, ~callback:(int=>unit)=?,int,int) => promise<probl
        await sleep(30)
        await fn()
   }
-  await fn() |> ((e1,e2) as equation) =>
-    { left:toString(e1), right:toString(e2),equation,domain}
+  await fn() |> res => switch res {
+    | None => None
+    | Some((e1,e2) as equation) =>
+      Some({ left:toString(e1), right:toString(e2),equation,domain})
+    }
 }

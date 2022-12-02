@@ -39,7 +39,10 @@ let multiTest = (~maxsol=?,nb,size,m) => {
   open Puzzle
   for _ in 1 to nb {
     generate(~maxsol=?maxsol,size,m)->Js.Promise.then_(pb => {
-      test(pb.equation,m)
+      switch pb {
+      | None => assert false
+      | Some(pb) => test(pb.equation,m)
+      }
       Js.Promise.resolve(())
       },_)->ignore
   }

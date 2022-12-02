@@ -56,6 +56,10 @@ button {
     position: absolute;
     top:48%;
     left:calc(50% - 100px);
+    display:block;
+}
+
+#centerText {
     width: 200px;
     text-align: center;
 }
