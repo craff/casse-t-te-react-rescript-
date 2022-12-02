@@ -36,9 +36,10 @@ let test = (eqn0,n) => {
 test((exp1,exp2),9)
 
 let multiTest = (~maxsol=?,nb,size,m) => {
+  open Puzzle
   for _ in 1 to nb {
-    Puzzle.generate(~maxsol=?maxsol,size,m)->Js.Promise.then_(((e,r)) => {
-      test((e,r),m)
+    generate(~maxsol=?maxsol,size,m)->Js.Promise.then_(pb => {
+      test(pb.equation,m)
       Js.Promise.resolve(())
       },_)->ignore
   }

@@ -57,7 +57,7 @@ let parseVar = (pos0,str) => {
 // parse an expression. Simple recursive algorithm using a stack.
 // NOTE: a bit limited if one wants to add unary minus, we would need real
 // parsing and lexing library.
-let parse = (str) => {
+let parse = str => {
   open Js.String
   let rec fn = (pos,stack,prio) => {
     let pos = ignoreBlank(pos,str)
@@ -68,7 +68,8 @@ let parse = (str) => {
        let (n, pos) = parseInt(pos,str)
        fn(pos, list{Cst(n),...stack}, prio)
     | (c,stack) if isAlpha(c) =>
-       fn(pos+1, list{Var(c),...stack}, prio)
+       let (v, pos) = parseVar(pos,str)
+       fn(pos, list{Var(v),...stack}, prio)
     | ("+",list{e1,...stack}) if prio >= Sum =>
        switch (fn (pos+1,stack,Pro)) {
        | (list{e2,...stack},pos) => fn(pos,list{Add(e1,e2),...stack},prio)
