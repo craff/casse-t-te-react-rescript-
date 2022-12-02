@@ -7,7 +7,7 @@ input {
 body {
     background-color:#B0B0FF;
     text-align:center;
-    padding: 10% 0px;
+    padding-top: 5%;
 }
 
 button {
@@ -16,6 +16,13 @@ button {
 
 #maxsol {
     width:5em;
+}
+
+#rule {
+    text-align: justify;
+    width: 50%;
+    margin: 0 auto;
+    margin-bottom: 3ex;
 }
 
 .cell {

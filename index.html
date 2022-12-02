@@ -1,22 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>ReScript Hello World</title>
-	<link rel="stylesheet" type="text/css" href="index.css">
-    </head>
-    <body>
-      <script>
-	function disableAll() {
-	    document.getElementById("overlay").style.display="block";
-	}
-	function enableAll() {
-	    document.getElementById("overlay").style.display="none";
-	}
-      </script>
-        <script type="module" src="/src/index.bs.js"></script>
-	<div id="overlay"><span id="center"></span></div>
-        <h1>Un casse tête coréen</h1>
-        <div id="root"/>
-    </body>
+  <head>
+    <meta charset="UTF-8">
+    <title>Un casse tête coréen</title>
+    <link rel="stylesheet" type="text/css" href="index.css">
+  </head>
+  <body>
+    <script>
+      // This is not possible directly from React/Rescript or
+      // there is something I don't understand yet. May be one need
+      // to use state even to modify css properties with React?
+      // TODO
+      function disableAll() {
+	  document.getElementById("overlay").style.display="block";
+      }
+      function enableAll() {
+	  document.getElementById("overlay").style.display="none";
+      }
+    </script>
+    <script type="module" src="/src/index.bs.js"></script>
+    <div id="overlay"><span id="center"></span></div>
+    <h1>Un casse tête coréen</h1>
+    <p id="rule">
+      La règle est simple, il suffit de compléter les cases vides avec les
+      chiffres de 1 à 9 pour que l'égalité soit juste. Un chiffre différent
+      dans chaque case. Bon courage!
+    </p>
+    <div id="root"/>
+  </body>
 </html>
