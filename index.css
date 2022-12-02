@@ -55,11 +55,11 @@ button {
     z-index: 999;
     position: absolute;
     top:48%;
-    left:calc(50% - 100px);
+    width: 120px;
+    left:calc(50% - 60px);
     display:block;
 }
 
 #centerText {
-    width: 200px;
     text-align: center;
 }

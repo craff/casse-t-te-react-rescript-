@@ -74,7 +74,7 @@ let (centerElt, setCenter) = {
 overlayElt->ReactDOM.Client.Root.render(
   <div id="center" >
     <div>{centerElt}</div>
-    <div><Button onClick={Puzzle.cancel} text="interrompt"/></div>
+    <div><Button onClick={Puzzle.cancel} text=Lang.cancel/></div>
   </div>
  )
 
@@ -102,7 +102,7 @@ let rec setPuzzle = problem => {
     let t1 = Js.Date.make()
     let nb = Belt.Array.length(solutions)
     let dt = Js.Date.getTime(t1) -. Js.Date.getTime(t0)
-    let text = Belt.Int.toString(nb) ++ " solutions found in " ++
+    let text = Belt.Int.toString(nb) ++ " " ++ Lang.solutions_found ++ " " ++
                Belt.Float.toString(dt) ++ "ms"
     setResult(text)
     // We choose a random solution to give to the user
@@ -127,22 +127,22 @@ let rec setPuzzle = problem => {
         switch(Belt.Int.fromString(get())) {
         | None    =>
 	  // not all inputs are integer
-	  raise(Bad("pas des entiers"))
+	  raise(Bad(Lang.not_integer))
         | Some(x) =>
-          if x < 1 || x > 9 { raise(Bad("pas entre 1 et 9")) }
+          if x < 1 || x > 9 { raise(Bad(Lang.bad_interval)) }
 	  used[x-1] = true
           env->set(k,x)
         }
       })
       if not (Belt.Array.every(used, (x => x))) {
-        raise(Bad("il manque des entiers de 1 à 9"))
+        raise(Bad(Lang.not_all))
       }
       if not (Expr.check(problem.equation,env)) {
-        raise(Bad("pas le bon resultat"))
+        raise(Bad(Lang.not_good))
       }
-      setResult("bonne solution")
+      setResult(Lang.good_solution)
     } catch {
-      | Bad(msg) => setResult("mauvaise solution: " ++ msg)
+      | Bad(msg) => setResult(Lang.bad_solution ++ ": " ++ msg)
     }
   }
 
@@ -166,8 +166,9 @@ let rec setPuzzle = problem => {
       }
       enableAll()
       let t1 = Js.Date.getTime(Js.Date.make())
-      setResult(Js.Int.toString(count.contents) ++ " problèmes testés en " ++
-                   Js.Float.toString(t1 -. t0) ++ "ms")
+      setResult(Js.Int.toString(count.contents) ++ " " ++
+                Lang.nb_tested ++ " " ++
+                Js.Float.toString(t1 -. t0) ++ "ms")
       Js.Promise.resolve(())
     }, _) -> ignore
   }
@@ -175,13 +176,13 @@ let rec setPuzzle = problem => {
   // The root element!
   let elt =
     <div>
+      <h1>{React.string(Lang.title)}</h1>
+      <p id="rule">{React.string(Lang.description)}</p>
       <div className="header">
-        <Button onClick=check text="teste ma solution"/>
-        <Button onClick=newPuzzle
-	        text="genère un nouveau problème avec un nombre de solution \u2264 "/>
+        <Button onClick=check text=Lang.check_solution/>
+        <Button onClick=newPuzzle text=Lang.generate/>
 	<MaxSol init=50 get=getMaxSol/>
-        <Button onClick=solvePuzzle
-	        text="résoud automatiquement"/>
+        <Button onClick=solvePuzzle text=Lang.solve/>
       </div>
       {puzzle}
       <div className="footer">
@@ -195,3 +196,5 @@ let rec setPuzzle = problem => {
 
 // Create the initial puzzle
 setPuzzle(Puzzle.classical)
+
+Js.log(Lang.all)
