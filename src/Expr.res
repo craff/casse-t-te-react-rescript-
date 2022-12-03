@@ -88,7 +88,7 @@ let check : (equation,env) => bool = ((e1,e2), env) =>
   }
 
 // get the list of all variables in an expression
-let rec get_variables : expr => Belt.Set.String.t = (expr) => {
+let rec getVariables : expr => Belt.Set.String.t = (expr) => {
   open Belt.Set.String
   switch expr {
   | Var(v)     => empty->add(v)
@@ -96,7 +96,7 @@ let rec get_variables : expr => Belt.Set.String.t = (expr) => {
   | Add(e1,e2)
   | Sub(e1,e2)
   | Mul(e1,e2)
-  | Div(e1,e2) => union(get_variables(e1),get_variables(e2))
+  | Div(e1,e2) => union(getVariables(e1),getVariables(e2))
   }}
 
 // domain is the set of integer used for the value of the variables
@@ -110,7 +110,7 @@ let solve = (eqn,domain) => {
   module I = Belt.Set.Int
   module M = Belt.Map.String
   let (e1,e2) = eqn
-  let vars = union(get_variables(e1),get_variables(e2))
+  let vars = union(getVariables(e1),getVariables(e2))
   let rec fn = (solutions, domain, vars, env) => {
     switch vars->minimum {
       | None =>
@@ -148,7 +148,7 @@ let iSolve = (~maxsol=?,eqn,domain) => {
   module I = Belt.Set.Int
   module M = Belt.Map.String
   let (e1,e2) = eqn
-  let vars = union(get_variables(e1),get_variables(e2))
+  let vars = union(getVariables(e1),getVariables(e2))
   let nbSol = ref(0)
   let rec fn = (solutions, domain, vars, env) => {
     // TODO: use an heuristic to select cleverly the next variable

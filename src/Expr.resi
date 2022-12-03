@@ -32,7 +32,7 @@ type equation = (expr,expr)
 let check : (equation,env) => bool
 
 // get the list of all variables in an expression
-let get_variables : expr => Belt.Set.String.t
+let getVariables : expr => Belt.Set.String.t
 
 // domain is the set of integer used for the value of the variables
 type domain = Belt.Set.Int.t
