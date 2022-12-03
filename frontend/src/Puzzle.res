@@ -98,7 +98,9 @@ let generate : (~maxsol:int=?, ~callback:(int=>unit)=?,int,int)
   }
   // loop using async and sleep until we find an acceptable problems
   let count = ref(0)
-  let rec fn = async () =>
+  let rec fn = async () => {
+    // with async/await, 1ms is enough not to block the browser
+    await sleep(1)
     switch (cancelled.contents, do_one ()) {
     | (true, _)      => cancelled := false; None
     | (_, Some(eqn)) => // Hourah: we found a solution
@@ -109,8 +111,8 @@ let generate : (~maxsol:int=?, ~callback:(int=>unit)=?,int,int)
        | None => ()
        | Some(f) => f(count.contents)
        }
-       await sleep(30)
        await fn()
+    }
   }
   await fn() |> res => switch res {
     | None => None

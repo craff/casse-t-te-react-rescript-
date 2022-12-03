@@ -1,0 +1,4 @@
+(executable
+ (name backend)
+ (preprocess (pps ppx_rapper))
+ (libraries tiny_httpd caqti ppx_rapper_lwt ppx_rapper.runtime caqti-driver-postgresql))

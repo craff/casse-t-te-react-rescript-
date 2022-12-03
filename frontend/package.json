@@ -4,17 +4,21 @@
     "keywords": [],
     "author": "",
     "license": "FREE",
-    "type": "module",
-    "main": "src/index.res",
+    "private": true,
     "scripts": {
-        "build": "rescript build -with-deps",
-        "clean": "rescript clean -with-deps",
-        "test": "node src/TestInterval.bs.js && node src/TestExpr.bs.js",
-        "dev": "vite"
+        "build": "rescript build",
+        "clean": "rescript clean",
+        "deploy": "NODE_ENV=production webpack",
+        "tests": "node src/TestInterval.bs.js && node src/TestExpr.bs.js"
     },
     "dependencies": {
         "@rescript/react": "^0.11.0",
         "react": "^18.2.0",
-        "rescript": "^10.1.0"
+        "require.js": "^1.0.0",
+        "rescript": "^10.1.0",
+        "webpack": "^5.75.0"
+    },
+    "devDependencies": {
+        "webpack-cli": "^5.0.0"
     }
 }

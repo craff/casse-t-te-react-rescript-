@@ -47,20 +47,11 @@ module Text = {
 exception Bad(string)
 
 // get the root element of the page
-let rootElt   = {
+let body   = {
   open ReactDOM
-  switch querySelector("#root") {
-  | None => assert(false)
-  | Some(root) => Client.createRoot(root)
-  }
-}
-
-// get the center element of the overlay
-let overlayElt   = {
-  open ReactDOM
-  switch querySelector("#overlay") {
-  | None => assert(false)
-  | Some(root) => Client.createRoot(root)
+  switch querySelector("body") {
+  | None    => assert(false)
+  | Some(e) => Client.createRoot(e)
   }
 }
 
@@ -71,33 +62,41 @@ let (centerElt, setCenter) = {
   (elt, n => set.contents(Js.Int.toString(n)))
 }
 
-overlayElt->ReactDOM.Client.Root.render(
-  <div id="center" >
-    <div>{centerElt}</div>
-    <div><Button onClick={Puzzle.cancel} text=Lang.cancel/></div>
-  </div>
- )
+let currentProblem = ref(Puzzle.classical)
+let currentInputs = ref(Js.Dict.empty())
 
 // main function creating the puzzle
-let rec setPuzzle = problem => {
-  open Puzzle
-  // the html for the puzzle
+let setPuzzle = () => {
+  let problem = currentProblem.contents
+  // The html for the puzzle
   // - puzzle if the html element
   // - inputs is a dictionnary holding the user's solution
   let (puzzle,inputs) = HtmlExpr.toHtml(problem.equation)
-
-  // the text holding the various message of the page
-  let (resultElt, setResult) = {
-    let set = ref (_ => assert false)
-    let elt = <Text id="result" init="" set/>
-    (elt, text => set.contents(text))
+  currentInputs := inputs
+  let div   = {
+    open ReactDOM
+    switch querySelector("#puzzle") {
+    | None    => assert(false)
+    | Some(e) => Client.createRoot(e)
+    }
   }
+  div->ReactDOM.Client.Root.render(puzzle)
+}
 
-  // callback to the solve puzzle
-  let solvePuzzle = (_event) => {
-    // Currently all puzzles use the same domain as the "classical one"
-    let domain = classical.domain
-    let t0 = Js.Date.make()
+// the text holding the various message of the page
+let (resultElt, setResult) = {
+  let set = ref (_ => assert false)
+  let elt = <Text id="result" init="" set/>
+  (elt, text => set.contents(text))
+}
+
+// callback to the solve puzzle
+let solvePuzzle = (_event) => {
+  open Puzzle
+  let problem = currentProblem.contents
+  // Currently all puzzles use the same domain as the "classical one"
+  let domain = classical.domain
+  let t0 = Js.Date.make()
     let solutions = Expr.iSolve(problem.equation,domain)
     let t1 = Js.Date.make()
     let nb = Belt.Array.length(solutions)
@@ -108,21 +107,21 @@ let rec setPuzzle = problem => {
     // We choose a random solution to give to the user
     let solution = solutions[Js.Math.random_int(0,nb)]
     solution->Belt.Map.String.forEach((k,x) =>
-      switch(inputs->Js.Dict.get(k)) {
+      switch(currentInputs.contents->Js.Dict.get(k)) {
         | Some(set,_) => set(x)
         | None => () // do nothing
       }
     )
   }
 
-  // callback to the "test solution" button
-  let check = (_event) => {
+// callback to the "test solution" button
+let check = (_event) => {
     open Belt.Map.String
     // an array to check that all integers are used
     let used = Belt.Array.make(9,false)
     try {
       // we scan the user inputs to produce an environment
-      let env : Belt.Map.String.t<int> = Js.Dict.entries(inputs)->
+      let env : Belt.Map.String.t<int> = Js.Dict.entries(currentInputs.contents)->
           Belt.Array.reduce(empty,(env,(k,(_,get))) => {
         switch(Belt.Int.fromString(get())) {
         | None    =>
@@ -137,7 +136,7 @@ let rec setPuzzle = problem => {
       if not (Belt.Array.every(used, (x => x))) {
         raise(Bad(Lang.not_all))
       }
-      if not (Expr.check(problem.equation,env)) {
+      if not (Expr.check(currentProblem.contents.equation,env)) {
         raise(Bad(Lang.not_good))
       }
       setResult(Lang.good_solution)
@@ -146,12 +145,13 @@ let rec setPuzzle = problem => {
     }
   }
 
-  // a ref to a function to get the maximum number of solutions
-  let getMaxSol = ref (() => 50)
+// a ref to a function to get the maximum number of solutions
+let getMaxSol = ref (() => 50)
 
-  // callback to search for a new puzzle
-  // TODO : create a "cancel" button
-  let newPuzzle = (_event) => {
+// callback to search for a new puzzle
+// TODO : create a "cancel" button
+let newPuzzle = (_event) => {
+  open Puzzle
     disableAll()
     let count = ref(0)
     let callback = (nb) => {setCenter(count.contents); count := nb}
@@ -162,7 +162,7 @@ let rec setPuzzle = problem => {
     generate(~maxsol,~callback,13,9)->Js.Promise.then_(problem => {
       switch problem {
         | None => ()
-        | Some(problem) => setPuzzle(problem)
+        | Some(problem) => currentProblem:=problem; setPuzzle()
       }
       enableAll()
       let t1 = Js.Date.getTime(Js.Date.make())
@@ -173,28 +173,32 @@ let rec setPuzzle = problem => {
     }, _) -> ignore
   }
 
-  // The root element!
-  let elt =
-    <div>
-      <h1>{React.string(Lang.title)}</h1>
-      <p id="rule">{React.string(Lang.description)}</p>
-      <div className="header">
-        <Button onClick=check text=Lang.check_solution/>
-        <Button onClick=newPuzzle text=Lang.generate/>
-	<MaxSol init=50 get=getMaxSol/>
-        <Button onClick=solvePuzzle text=Lang.solve/>
-      </div>
-      {puzzle}
-      <div className="footer">
-        {resultElt}
-      </div>
+// The root element!
+let elt = {
+  <div id="main"><div id="overlay">
+    <div id="center">
+      <div>{centerElt}</div>
+      <div><Button onClick={Puzzle.cancel} text=Lang.cancel/></div>
     </div>
+  </div>
+  <div id ="root">
+    <h1>{React.string(Lang.title)}</h1>
+    <p id="rule">{React.string(Lang.description)}</p>
+    <div className="header">
+      <Button onClick=check text=Lang.check_solution/>
+      <Button onClick=newPuzzle text=Lang.generate/>
+      <MaxSol init=50 get=getMaxSol/>
+      <Button onClick=solvePuzzle text=Lang.solve/>
+    </div>
+    <div id="puzzle"></div>
+    <div className="footer">
+      {resultElt}
+    </div>
+  </div>
+  </div>}
 
-  // add the element to the page
-  rootElt->ReactDOM.Client.Root.render(elt)
-}
+// add the element to the page
+let _ = body->ReactDOM.Client.Root.render(elt)
 
 // Create the initial puzzle
-setPuzzle(Puzzle.classical)
-
-Js.log(Lang.all)
+let _ = setPuzzle()
