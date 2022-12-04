@@ -50,7 +50,7 @@ let new_thread f =
 
 let () =
   let server = S.create ~max_connections:Options.maxc ~new_thread
-                        ~port:Options.port () in
+                        ~addr:Options.addr ~port:Options.port () in
   (* serving frontend directory *)
   let dir = Options.static_dir in
   let config = D.config ~dir_behavior:Index () in (* default config is what we want *)

@@ -5,11 +5,11 @@ After=network.target
 [Service]
 User=cocass
 Group=cocass
-StandardOutput=file:/var/log/cocass/pynbtools.out
-StandardError=file:/var/log/cocass/pynbtools.err
+StandardOutput=file:/var/log/cocass/cocass.out
+StandardError=file:/var/log/cocass/cocass.err
 Type=simple
 Restart=always
-ExecStart=/usr/local/bin/cocass -P 10043 -p cocass -d /usr/local/lib/cocass
+ExecStart=/usr/local/bin/cocass -P 10043 -p cocass -d /usr/local/lib/cocass -a "0.0.0.0"
 
 [Install]
 WantedBy=multi-user.target

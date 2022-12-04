@@ -13,7 +13,6 @@ module SelectLvl = {
    @react.component
    let make = () => {
      let onChange = evt => {
-       Js.log("change")
        let value = ReactEvent.Form.target(evt)["value"]
        switch value {
        | "hard"   => currentLvl:=Hard
@@ -21,7 +20,6 @@ module SelectLvl = {
        | "easy"   => currentLvl:=Easy
        | _        => assert(false)
        }
-       Js.log(currentLvl.contents)
      }
    <select onChange>
      <option value="hard">{React.string(Lang.hard)}</option>
