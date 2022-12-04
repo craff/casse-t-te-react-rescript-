@@ -5,7 +5,7 @@
 installation with `npm`:
 ```
 cd frontend
-npm install rescript
+npm install rescript rescript-request rescript-future @rescript/react react react-dom
 npm run build
 npm run tests
 npm run deploy
@@ -18,7 +18,7 @@ The static file needed to run the front end are in frontend/dist
 Install ocaml via opam and run
 ```
 cd backend
-opam install dune tiny_httpd caqti ppx_rapper_lwt ppx_rapper.runtime caqti-driver-postgresql yojson pacomb
+opam install dune tiny_httpd caqti ppx_rapper_lwt caqti-driver-postgresql yojson pacomb
 dune build
 ```
 

@@ -2,12 +2,14 @@ let prefix = ref ""
 let port = ref 8080
 let maxc = ref 5
 let static_dir = ref ""
+let num_domains = ref (Domain.recommended_domain_count ())
 
 let spec =
   Arg.[
       ("-p", Set_string prefix,
        "fix the prefix of the url (no \"/\" allowed) (defaut \"\")");
       ("-P", Set_int port, "the port to listen to (default 8080)");
+      ("-j", Set_int num_domains, "the number of thread used (default Domain.recommended_domain_count)");
       ("-d", Set_string static_dir, "the location of static files (default \"\")");
       ("-m", Set_int maxc, "maximum allowed connections (default 5)");
   ]
@@ -24,3 +26,4 @@ let prefix = !prefix
 let port = !port
 let maxc = !maxc
 let static_dir = !static_dir
+let num_domains = !num_domains

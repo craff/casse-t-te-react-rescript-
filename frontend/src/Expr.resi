@@ -29,7 +29,8 @@ let iEval : (expr,env,Interval.t) => Interval.t
 type equation = (expr,expr)
 
 // test if an equation holds in the given environment
-let check : (equation,env) => bool
+type result = Undefined | Good | Bad(int,int)
+let check : (equation,env) => result
 
 // get the list of all variables in an expression
 let getVariables : expr => Belt.Set.String.t

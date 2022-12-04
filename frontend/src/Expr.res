@@ -80,12 +80,15 @@ let iEval = (expr, env, full) => {
 
 type equation = (expr,expr)
 
+type result = Undefined | Good | Bad(int,int)
 // test if an equation holds in the given environment
-let check : (equation,env) => bool = ((e1,e2), env) =>
-  switch (eval(e1,env) == eval(e2,env)) {
-  | b                            => b
-  | exception (Not_found | BadDiv) => false
+let check : (equation,env) => result = ((e1,e2), env) => {
+  switch (eval(e1,env), eval(e2,env)) {
+  | (v1,v2) if v1 == v2            => Good
+  | (v1,v2)                        => Bad(v1,v2)
+  | exception (Not_found | BadDiv) => Undefined
   }
+}
 
 // get the list of all variables in an expression
 let rec getVariables : expr => Belt.Set.String.t = (expr) => {

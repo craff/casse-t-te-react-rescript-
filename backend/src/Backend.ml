@@ -38,17 +38,34 @@ let pexact str =
   if prefix = "" then exact str @/ return
   else exact prefix @/ exact str @/ return
 
+let pool =
+  let num_domains = Options.num_domains in
+  Domainslib.Task.setup_pool ~num_domains ()
+
+let new_thread f =
+   let f () = try f () with e ->
+     Printf.eprintf "exception in tatck: %s" (Printexc.to_string e)
+   in
+   ignore (Domainslib.Task.async pool f)
+
 let () =
-  let server = S.create ~max_connections:Options.maxc ~port:Options.port () in
+  let server = S.create ~max_connections:Options.maxc ~new_thread
+                        ~port:Options.port () in
   (* serving frontend directory *)
   let dir = Options.static_dir in
-  let config = D.config () in (* default config is what we want *)
+  let config = D.config ~dir_behavior:Index () in (* default config is what we want *)
   D.add_dir_path ~config ~dir ~prefix server;
   (* serving API requests *)
   S.add_route_handler server (pexact "send_problem") send_problem;
   S.add_route_handler server (pexact "get_problem") get_problem;
   S.add_route_handler server (pexact "send_solution") send_solution;
-  Printf.printf "listening on http://%s:%d\n%!" (S.addr server) (S.port server);
-  match S.run server with
-  | Ok () -> ()
-  | Error e -> raise e
+  Printf.eprintf "(%d) threads listening on http://%s:%d\n%!"
+    Options.num_domains (S.addr server) (S.port server);
+  let f () = match S.run server with
+    | Ok () -> ()
+    | Error e -> Printf.eprintf "unexpected toplevel exception: %s"
+                   (Printexc.to_string e)
+  in
+  while true do
+    Domainslib.Task.(run pool f)
+  done

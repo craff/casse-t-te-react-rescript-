@@ -23,6 +23,26 @@ let  = choose(lang => switch lang {
   | _    => None})
 */
 
+let easy = choose(lang => switch lang {
+  | "en" => Some("Easy")
+  | "fr" => Some("Facile")
+  | _    => None})
+
+let medium = choose(lang => switch lang {
+  | "en" => Some("Medium")
+  | "fr" => Some("Moyen")
+  | _    => None})
+
+let hard = choose(lang => switch lang {
+  | "en" => Some("Hard")
+  | "fr" => Some("Difficile")
+  | _    => None})
+
+let undefined = choose(lang => switch lang {
+  | "en" => Some("Your solution is undefined")
+  | "fr" => Some("Votre solution n'est pas définie")
+  | _    => None})
+
 let link = choose(lang => switch lang {
   | "en" => Some("Link to share if you enjoyed this problem: ")
   | "fr" => Some("Lien à partager si vous vous êtes bien amusé avec ce problem : ")
@@ -34,8 +54,8 @@ let title = choose(lang => switch lang {
   | _    => None})
 
 let description  = choose(lang => switch lang {
-  | "en" => Some("The rule is simple, you have to fill all the empty cases with integer between 1 and 9 to ensure that the equality holds. Each number between 1 and 9 must be used exactly once. Good luck!")
-  | "fr" => Some("La règle est simple, il suffit de compléter les cases vides avec les chiffres de 1 à 9 pour que l'égalité soit juste. Un chiffre différent dans chaque case. Bon courage!")
+  | "en" => Some("The rule is simple, you have to fill all the empty cases with integer between 1 and N to ensure that the equality holds. A different number must be used in each cell. Good luck!")
+  | "fr" => Some("La règle est simple, il suffit de compléter les cases vides avec les chiffres de 1 à N pour que l'égalité soit juste. Un chiffre différent dans chaque case. Bon courage!")
   | _    => None})
 
 let cancel = choose(lang => switch lang {
@@ -54,13 +74,13 @@ let not_integer = choose(lang => switch lang {
   | _    => None})
 
 let bad_interval = choose(lang => switch lang {
-  | "en" => Some("all integers must between 1 and 9")
-  | "fr" => Some("tous les entiers doivent être entre 1 et 9")
+  | "en" => Some("all integers must between 1 and ")
+  | "fr" => Some("tous les entiers doivent être entre 1 et ")
   | _    => None})
 
 let not_all = choose(lang => switch lang {
-  | "en" => Some("all integers between 1 and 9 must be used once")
-  | "fr" => Some("tous les entiers entre 1 et 9 doivent être utilisé une fois")
+  | "en" => Some("all integers from 1 must be used exactly once")
+  | "fr" => Some("tous les entiers à partir de 1 doivent être utilisé exactement une fois")
   | _    => None})
 
 let not_good = choose(lang => switch lang {
@@ -79,18 +99,23 @@ let good_solution = choose(lang => switch lang {
   | _    => None})
 
 let check_solution = choose(lang => switch lang {
-  | "en" => Some("Check my solution")
-  | "fr" => Some("Teste ma solution")
+  | "en" => Some("Check")
+  | "fr" => Some("Vérifie")
   | _    => None})
 
-let generate = choose(lang => switch lang {
-  | "en" => Some("Generate a pb whose number of solutions is \u2264 ")
-  | "fr" => Some("Genère un problème avec un nombre de solution \u2264 ")
+let generate1 = choose(lang => switch lang {
+  | "en" => Some("Generate a problem with a level")
+  | "fr" => Some("Genère un problem avec un niveau")
+  | _    => None})
+
+let generate2 = choose(lang => switch lang {
+  | "en" => Some("and a number of solutions \u2264 ")
+  | "fr" => Some("et un nombre de solutions \u2264 ")
   | _    => None})
 
 let solve = choose(lang => switch lang {
-  | "en" => Some("Solve automatically")
-  | "fr" => Some("Résoud automatiquement")
+  | "en" => Some("Solve")
+  | "fr" => Some("Résoud")
   | _    => None})
 
 let nb_tested = choose(lang => switch lang {

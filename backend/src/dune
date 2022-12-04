@@ -5,4 +5,5 @@
  (libraries tiny_httpd
             caqti ppx_rapper_lwt ppx_rapper.runtime caqti-driver-postgresql
 	    yojson
-	    pacomb))
+	    pacomb
+	    domainslib))

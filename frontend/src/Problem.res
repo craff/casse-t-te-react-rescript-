@@ -25,8 +25,8 @@ let solve = problem => {
       | None =>
         // no more variables we check if we found a solution
         switch check(eqn,env) {
-        | true  => list{env, ... solutions}
-        | false => solutions
+        | Good  => list{env, ... solutions}
+        | _     => solutions
         | exception Not_found => assert(false)
         }
       | Some(v) =>
@@ -66,13 +66,13 @@ let iSolve = (~maxsol=?,problem) => {
       | None =>
         // no more variables we check if we found a solution
         switch check(eqn,env) {
-        | true  => switch maxsol {
+        | Good  => switch maxsol {
 	           | None => ()
 		   | Some(n) => nbSol := nbSol.contents + 1
 		                if nbSol.contents > n { raise(Abort) }
                    }
 	           list{env, ... solutions}
-        | false => solutions
+        | _     => solutions
         | exception Not_found => assert(false)
         }
       | Some(v) =>

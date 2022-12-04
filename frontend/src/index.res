@@ -7,6 +7,30 @@ module Button = {
     <button onClick> {React.string(text)} </button>
 }
 
+type level = Easy | Medium | Hard
+let currentLvl = ref(Hard)
+module SelectLvl = {
+   @react.component
+   let make = () => {
+     let onChange = evt => {
+       Js.log("change")
+       let value = ReactEvent.Form.target(evt)["value"]
+       switch value {
+       | "hard"   => currentLvl:=Hard
+       | "medium" => currentLvl:=Medium
+       | "easy"   => currentLvl:=Easy
+       | _        => assert(false)
+       }
+       Js.log(currentLvl.contents)
+     }
+   <select onChange>
+     <option value="hard">{React.string(Lang.hard)}</option>
+     <option value="medium">{React.string(Lang.medium)}</option>
+     <option value="easy">{React.string(Lang.easy)}</option>
+   </select>
+   }
+}
+
 // A react component for the input holding the maximum number
 // of solutions when creating new problems
 // the parameter get is a reference to a function of type unit => int
@@ -70,7 +94,6 @@ let (centerElt, setCenter) = {
 let currentProblem = ref(Problem.classical)
 let currentId      = ref(-1) // set in initPuzzle below
 let currentInputs  = ref(Js.Dict.empty())
-
 // Set the url link to the current puzzle
 let setLink = id => {
   // TODO: is there a cleaner way in Rescript
@@ -101,6 +124,9 @@ let initPuzzle = _ => {
   puzzle
 }
 
+// was the current puzzle auto solved (to not send the solution in that case)
+let autoSolved = ref(false)
+
 // main function changing the puzzle
 let setPuzzle = _ => {
   let problem = currentProblem.contents
@@ -109,6 +135,7 @@ let setPuzzle = _ => {
   // - inputs is a dictionnary holding the user's solution
   let (puzzle,inputs) = HtmlExpr.toHtml(problem.equation)
   currentInputs := inputs
+  autoSolved := false
   let div   = {
     open ReactDOM
     switch querySelector("#puzzle") {
@@ -161,6 +188,7 @@ let solvePuzzle = (_event) => {
     let solution = solutions[Js.Math.random_int(0,nb)]
     // We send that solution to the server
     Api.sendSolution(solution,true,currentId.contents)
+    autoSolved := true
     solution->Belt.Map.String.forEach((k,x) =>
       switch(currentInputs.contents->Js.Dict.get(k)) {
         | Some(set,_) => set(x)
@@ -173,7 +201,12 @@ let solvePuzzle = (_event) => {
 let check = (_event) => {
     open Belt.Map.String
     // an array to check that all integers are used
-    let used = Belt.Array.make(9,false)
+    let m = switch currentLvl.contents {
+    | Hard   => 9
+    | Medium => 7
+    | Easy   => 5
+    }
+    let used = Belt.Array.make(m,false)
     try {
       // we scan the user inputs to produce an environment
       let env : Belt.Map.String.t<int> = Js.Dict.entries(currentInputs.contents)->
@@ -183,7 +216,7 @@ let check = (_event) => {
 	  // not all inputs are integer
 	  raise(Bad(Lang.not_integer))
         | Some(x) =>
-          if x < 1 || x > 9 { raise(Bad(Lang.bad_interval)) }
+          if x < 1 || x > m { raise(Bad(Lang.bad_interval ++ Belt.Int.toString(m))) }
 	  used[x-1] = true
           env->set(k,x)
         }
@@ -191,10 +224,13 @@ let check = (_event) => {
       if not (Belt.Array.every(used, (x => x))) {
         raise(Bad(Lang.not_all))
       }
-      if not (Expr.check(currentProblem.contents.equation,env)) {
-        raise(Bad(Lang.not_good))
+      switch Expr.check(currentProblem.contents.equation,env) {
+      | Good => ()
+      | Bad(v1,v2) => raise(Bad(Lang.not_good ++
+                      "(" ++ Belt.Int.toString(v1) ++ "\u2260" ++ Belt.Int.toString(v2) ++ ")"))
+      | Undefined => raise(Bad(Lang.undefined))
       }
-      Api.sendSolution(env,false,currentId.contents)
+      if !autoSolved.contents { Api.sendSolution(env,false,currentId.contents) }
       setResult(Lang.good_solution)
     } catch {
       | Bad(msg) => setResult(Lang.bad_solution ++ ": " ++ msg)
@@ -216,7 +252,12 @@ let newPuzzle = (_event) => {
     let maxsol = getMaxSol.contents()
     // Puzzle.generate is a promise that call timeout not to block the
     // navigator.
-    generate(~maxsol,~callback,13,9)->Js.Promise.then_(problem => {
+    let (size,m) = switch currentLvl.contents {
+    | Hard   => (13,9)
+    | Medium => (11,7)
+    | Easy   => (9 ,5)
+    }
+    generate(~maxsol,~callback,size,m)->Js.Promise.then_(problem => {
       switch problem {
         | None => ()
         | Some(problem) =>
@@ -246,7 +287,9 @@ let elt = {
     <p id="rule">{React.string(Lang.description)}</p>
     <div className="header">
       <Button onClick=check text=Lang.check_solution/>
-      <Button onClick=newPuzzle text=Lang.generate/>
+      <Button onClick=newPuzzle text=Lang.generate1/>
+      <SelectLvl/>
+      {React.string(" " ++ Lang.generate2 ++ " ")}
       <MaxSol init=50 get=getMaxSol/>
       <Button onClick=solvePuzzle text=Lang.solve/>
     </div>
