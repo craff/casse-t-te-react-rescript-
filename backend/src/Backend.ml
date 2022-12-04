@@ -41,7 +41,7 @@ let pexact str =
 let () =
   let server = S.create ~max_connections:Options.maxc ~port:Options.port () in
   (* serving frontend directory *)
-  let dir = "../frontend/dist" in
+  let dir = Options.static_dir in
   let config = D.config () in (* default config is what we want *)
   D.add_dir_path ~config ~dir ~prefix server;
   (* serving API requests *)
