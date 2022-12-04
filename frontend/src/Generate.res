@@ -1,20 +1,5 @@
 open Expr
-
-type problem = {
-  left : string,
-  right : string,
-  equation : equation,
-  domain : domain
-}
-
-let fromString = (left,right) => {
-  left: left,
-  right: right,
-  equation: (Parser.parse(left), Parser.parse(right)),
-  domain: Belt.Set.Int.fromArray(Belt.Array.makeBy(9, i => i+1)),
-}
-// The "classical" puzzle:
-let classical = fromString( "a+13*b/c+d+12*e-f-11+g*h/i-10","66")
+open Problem
 
 // replaces constant from 1 to n by variables
 let putVariables : (expr,int) => expr = (expr,m) => {
@@ -85,12 +70,15 @@ let generate : (~maxsol:int=?, ~callback:(int=>unit)=?,int,int)
       if r < 0 { None }
       else {
         let e = putVariables(e,m)
-        let eqn = (e, Cst(r))
+        let equation = (e, Cst(r))
+	let problem = { equation, domain,
+	                left: toString(e), right: Belt.Int.toString(r)
+		      }
         switch maxsol {
-        | None     => Some(eqn)
+        | None     => Some(equation)
         | Some(nb) =>
 	  // maxsol was given, we check if the solution is acceptable
-	  let _ = iSolve(~maxsol=nb,eqn,domain); { Some(eqn) }
+	  let _ = iSolve(~maxsol=nb,problem); { Some(equation) }
         }
       }
     }
@@ -116,7 +104,9 @@ let generate : (~maxsol:int=?, ~callback:(int=>unit)=?,int,int)
   }
   await fn() |> res => switch res {
     | None => None
-    | Some((e1,e2) as equation) =>
-      Some({ left:toString(e1), right:toString(e2),equation,domain})
+    | Some((e1,e2) as equation) => {
+      let pb = { left:toString(e1), right:toString(e2),equation,domain}
+      Some(pb)
+      }
     }
-}
+  }

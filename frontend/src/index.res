@@ -9,6 +9,9 @@ module Button = {
 
 // A react component for the input holding the maximum number
 // of solutions when creating new problems
+// the parameter get is a reference to a function of type unit => int
+// that will give the current value
+// This allows to leek state from components.
 module MaxSol = {
    @react.component
    let make = (~get,~init) => {
@@ -29,6 +32,7 @@ module MaxSol = {
 // A module for modifialble text.
 // We use references to lift the state outside the component
 // It seems to work, may may not be legal.
+// Same trick as above to set the text using set : ref(string => unit)
 module Text = {
    @react.component
    let make = (~init,~set,~id) => {
@@ -62,11 +66,43 @@ let (centerElt, setCenter) = {
   (elt, n => set.contents(Js.Int.toString(n)))
 }
 
-let currentProblem = ref(Puzzle.classical)
-let currentInputs = ref(Js.Dict.empty())
+// Setting the variable associated to the initial problem
+let currentProblem = ref(Problem.classical)
+let currentId      = ref(-1) // set in initPuzzle below
+let currentInputs  = ref(Js.Dict.empty())
 
-// main function creating the puzzle
-let setPuzzle = () => {
+// Set the url link to the current puzzle
+let setLink = id => {
+  // TODO: is there a cleaner way in Rescript
+  open ReactDOM
+  let port = %raw(`window.location.port`)
+  let url = %raw(`window.location.protocol`) ++
+            "//" ++ %raw(`window.location.hostname`) ++
+	    ":" ++ port ++
+            %raw(`window.location.pathname`) ++ "?id=" ++ Belt.Int.toString(id)
+  let span = switch querySelector("#link") {
+  | None    => assert(false)
+  | Some(e) => Client.createRoot(e)
+  }
+  span->ReactDOM.Client.Root.render(React.string(url))
+}
+
+// main function creating the initial puzzle
+let initPuzzle = _ => {
+  let problem = currentProblem.contents
+  // The html for the puzzle
+  // - puzzle if the html element
+  // - inputs is a dictionnary holding the user's solution
+  let (puzzle,inputs) = HtmlExpr.toHtml(problem.equation)
+  // This send the default pb in the rare case it is not in the data base
+  // and fetch is id to update the link.
+  Api.sendProblem(problem, id => {currentId:=id; setLink(id)})
+  currentInputs := inputs
+  puzzle
+}
+
+// main function changing the puzzle
+let setPuzzle = _ => {
   let problem = currentProblem.contents
   // The html for the puzzle
   // - puzzle if the html element
@@ -83,6 +119,25 @@ let setPuzzle = () => {
   div->ReactDOM.Client.Root.render(puzzle)
 }
 
+// get the initial problem from the id in url. If no id is given:
+// we keep the initial problem. No Rescript bind so we use raw javascript
+%%raw(`
+const queryParameters = new URLSearchParams(window.location.search)
+`)
+let requestProblemId : Js.Nullable.t<int> = %raw(`queryParameters.get("id")`)
+let requestProblemId = Js.Nullable.toOption(requestProblemId)
+switch (requestProblemId) {
+  | Some(id) =>
+    let setProblemCb   = (pb,id) => {
+      currentProblem := pb
+      currentId      := id
+      setLink(id)
+      setPuzzle()
+    }
+    Api.getProblem(id,setProblemCb)
+  | None => ()
+}
+
 // the text holding the various message of the page
 let (resultElt, setResult) = {
   let set = ref (_ => assert false)
@@ -92,12 +147,10 @@ let (resultElt, setResult) = {
 
 // callback to the solve puzzle
 let solvePuzzle = (_event) => {
-  open Puzzle
   let problem = currentProblem.contents
   // Currently all puzzles use the same domain as the "classical one"
-  let domain = classical.domain
   let t0 = Js.Date.make()
-    let solutions = Expr.iSolve(problem.equation,domain)
+    let solutions = Problem.iSolve(problem)
     let t1 = Js.Date.make()
     let nb = Belt.Array.length(solutions)
     let dt = Js.Date.getTime(t1) -. Js.Date.getTime(t0)
@@ -106,6 +159,8 @@ let solvePuzzle = (_event) => {
     setResult(text)
     // We choose a random solution to give to the user
     let solution = solutions[Js.Math.random_int(0,nb)]
+    // We send that solution to the server
+    Api.sendSolution(solution,true,currentId.contents)
     solution->Belt.Map.String.forEach((k,x) =>
       switch(currentInputs.contents->Js.Dict.get(k)) {
         | Some(set,_) => set(x)
@@ -139,6 +194,7 @@ let check = (_event) => {
       if not (Expr.check(currentProblem.contents.equation,env)) {
         raise(Bad(Lang.not_good))
       }
+      Api.sendSolution(env,false,currentId.contents)
       setResult(Lang.good_solution)
     } catch {
       | Bad(msg) => setResult(Lang.bad_solution ++ ": " ++ msg)
@@ -146,12 +202,13 @@ let check = (_event) => {
   }
 
 // a ref to a function to get the maximum number of solutions
+// this ref is updated by the input element
 let getMaxSol = ref (() => 50)
 
 // callback to search for a new puzzle
 // TODO : create a "cancel" button
 let newPuzzle = (_event) => {
-  open Puzzle
+  open Generate
     disableAll()
     let count = ref(0)
     let callback = (nb) => {setCenter(count.contents); count := nb}
@@ -162,7 +219,10 @@ let newPuzzle = (_event) => {
     generate(~maxsol,~callback,13,9)->Js.Promise.then_(problem => {
       switch problem {
         | None => ()
-        | Some(problem) => currentProblem:=problem; setPuzzle()
+        | Some(problem) =>
+	  currentProblem:=problem;
+	  Api.sendProblem(problem, id => {currentId:=id; setLink(id)})
+	  setPuzzle()
       }
       enableAll()
       let t1 = Js.Date.getTime(Js.Date.make())
@@ -178,7 +238,7 @@ let elt = {
   <div id="main"><div id="overlay">
     <div id="center">
       <div>{centerElt}</div>
-      <div><Button onClick={Puzzle.cancel} text=Lang.cancel/></div>
+      <div><Button onClick={Generate.cancel} text=Lang.cancel/></div>
     </div>
   </div>
   <div id ="root">
@@ -190,15 +250,13 @@ let elt = {
       <MaxSol init=50 get=getMaxSol/>
       <Button onClick=solvePuzzle text=Lang.solve/>
     </div>
-    <div id="puzzle"></div>
+    <div id="puzzle">{initPuzzle()}</div>
     <div className="footer">
       {resultElt}
     </div>
+    <p>{React.string(Lang.link)}<span id="link"></span></p>
   </div>
   </div>}
 
 // add the element to the page
 let _ = body->ReactDOM.Client.Root.render(elt)
-
-// Create the initial puzzle
-let _ = setPuzzle()

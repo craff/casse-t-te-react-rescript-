@@ -33,22 +33,3 @@ let check : (equation,env) => bool
 
 // get the list of all variables in an expression
 let getVariables : expr => Belt.Set.String.t
-
-// domain is the set of integer used for the value of the variables
-type domain = Belt.Set.Int.t
-
-// solve an equation.
-// Naive solve trying all possibilities. Used to test correctness
-// of more complex solutions (see TestExpr.res)
-// It returns all solutions
-let solve : (equation,domain) => array<env>
-
-// solve an equation, using arithmetic interval to detect
-// early failure. Basically it detects two cases:
-// - The left member and right member do not overlap
-// - Some division will fail
-// - we interrupt with exception Abort is maxsol is given
-//   this is used when building problems to avoid searching for
-//   all solutions.
-exception Abort
-let iSolve : (~maxsol:int=?, equation, domain) => array<env>

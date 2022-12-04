@@ -23,13 +23,18 @@ let  = choose(lang => switch lang {
   | _    => None})
 */
 
+let link = choose(lang => switch lang {
+  | "en" => Some("Link to share if you enjoyed this problem: ")
+  | "fr" => Some("Lien à partager si vous vous êtes bien amusé avec ce problem : ")
+  | _    => None})
+
 let title = choose(lang => switch lang {
   | "en" => Some("A Corean puzzle")
   | "fr" => Some("Un casse tête Corréen")
   | _    => None})
 
 let description  = choose(lang => switch lang {
-  | "en" => Some("The rule is simple, tou have to fill all the empty cases with integer between 1 and 9 to ensure that the equality holds. Each numver between 1 and 9 must be used exactly once. Good luck!")
+  | "en" => Some("The rule is simple, you have to fill all the empty cases with integer between 1 and 9 to ensure that the equality holds. Each number between 1 and 9 must be used exactly once. Good luck!")
   | "fr" => Some("La règle est simple, il suffit de compléter les cases vides avec les chiffres de 1 à 9 pour que l'égalité soit juste. Un chiffre différent dans chaque case. Bon courage!")
   | _    => None})
 

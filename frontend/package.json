@@ -6,7 +6,7 @@
     "license": "FREE",
     "private": true,
     "scripts": {
-        "build": "rescript build",
+        "build": "rescript build -with-deps",
         "clean": "rescript clean",
         "deploy": "NODE_ENV=production webpack",
         "tests": "node src/TestInterval.bs.js && node src/TestExpr.bs.js"
@@ -16,6 +16,8 @@
         "react": "^18.2.0",
         "require.js": "^1.0.0",
         "rescript": "^10.1.0",
+        "rescript-future": "^2.1.0",
+        "rescript-request": "^3.0.1",
         "webpack": "^5.75.0"
     },
     "devDependencies": {

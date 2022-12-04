@@ -63,3 +63,8 @@ button {
 #centerText {
     text-align: center;
 }
+
+#link {
+    font-family: sans-serif;
+    background-color:#D0D0FF;
+}
