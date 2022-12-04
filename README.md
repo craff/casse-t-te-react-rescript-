@@ -1,4 +1,4 @@
-# A small puzzle to test ReScript + React
+# A small puzzle to test (ReScript + React) + (OCaml + tiny_httpd + caqti)
 
 ## Compilation of the frontend:
 
