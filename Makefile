@@ -1,6 +1,6 @@
 
 all:
-	cd frontend && npm run build np && npm run deploy
+	cd frontend && npm run build && npm run deploy
 	cd backend && dune build
 
 clean:

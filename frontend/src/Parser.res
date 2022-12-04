@@ -100,5 +100,5 @@ let parse = str => {
   }}
   switch fn(0,list{},Sum) {
   | (list{e},pos) if pos >= length(str) => e
-  | (stack,pos)                         => raise(Parse_error(pos))
+  | (_,pos)                             => raise(Parse_error(pos))
   }}

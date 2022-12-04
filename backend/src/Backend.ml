@@ -31,16 +31,23 @@ let send_solution req =
     S.Response.make_string (Ok "ok")
   with e -> fail "Error in send_solution" e
 
+open Options
+
+let pexact str =
+  let open S.Route in
+  if prefix = "" then exact str @/ return
+  else exact prefix @/ exact str @/ return
+
 let () =
-  let server = S.create () in
+  let server = S.create ~max_connections:Options.maxc ~port:Options.port () in
   (* serving frontend directory *)
   let dir = "../frontend/dist" in
   let config = D.config () in (* default config is what we want *)
-  D.add_dir_path ~config ~dir ~prefix:"" server;
+  D.add_dir_path ~config ~dir ~prefix server;
   (* serving API requests *)
-  S.add_route_handler server S.Route.(exact "send_problem" @/ return) send_problem;
-  S.add_route_handler server S.Route.(exact "get_problem" @/ return) get_problem;
-  S.add_route_handler server S.Route.(exact "send_solution" @/ return) send_solution;
+  S.add_route_handler server (pexact "send_problem") send_problem;
+  S.add_route_handler server (pexact "get_problem") get_problem;
+  S.add_route_handler server (pexact "send_solution") send_solution;
   Printf.printf "listening on http://%s:%d\n%!" (S.addr server) (S.port server);
   match S.run server with
   | Ok () -> ()

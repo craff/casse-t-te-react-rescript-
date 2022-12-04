@@ -100,7 +100,7 @@ module Env : Rapper.CUSTOM with type t = (string * int) array = struct
       Array.iteri (fun i (k,x) ->
 	r := !r ^ (if i = 0 then "" else ",") ^ "\"(" ^ k ^ "," ^ string_of_int x ^ ")\"")
         a;
-      Ok (!r ^ "%s}")
+      Ok (!r ^ "}")
     in
     let decode str =
       let%parser tuple =  '(' (k::STRING_LIT) ',' (n::INT) ')' => (k,n) in
