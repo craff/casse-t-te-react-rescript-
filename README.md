@@ -39,16 +39,14 @@ via the following API:
   { left:  /string representing the right member of the problem/,
     right: /string representing the left member of the problem/,
     domain: /array of integer which are all the walut we must use in the
-           solution/
-  }
+           solution/}
   ```
-  a unique id and creation timestamp is stored in the data base.
+  A unique id and creation timestamp is stored in the data base.
   Example:
   ```
   { left: "a+b"
     right: "c-3"
-    domain; [1,2,3]
-  }
+    domain; [1,2,3]}
   ```
   This request returns the id of the generated problem as JSON
 
@@ -59,7 +57,11 @@ via the following API:
   ```
   { problem: /the id of the problem/,
     auto: /boolean telling if the solution was produce automatically/,
-	env: /the value of the variables in the problem as a dictionnary/
-  }
+	env: /the value of the variables in the problem as a dictionnary/}
   ```
+  A unique id and creation timestamp is stored in the data base.
+  Example:
+  {"problem":7,
+   "auto":false,
+   "env":{"A":8,"B":2,"C":5,"D":1,"E":4,"F":9,"G":3,"H":7,"I":6}}
   This request returns nothing.
