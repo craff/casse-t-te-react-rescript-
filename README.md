@@ -15,7 +15,7 @@ The static file needed to run the front end are in frontend/dist
 
 ## Compilation of the backend:
 
-Install ocaml via opam and run
+Install ocaml 4.14.0 via opam and run
 ```
 cd backend
 opam install dune tiny_httpd caqti ppx_rapper_lwt caqti-driver-postgresql yojson pacomb

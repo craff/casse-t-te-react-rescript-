@@ -9,7 +9,7 @@ StandardOutput=file:/var/log/cocass/cocass.out
 StandardError=file:/var/log/cocass/cocass.err
 Type=simple
 Restart=always
-ExecStart=/usr/local/bin/cocass -P 10043 -p cocass -d /usr/local/lib/cocass -a "0.0.0.0"
+ExecStart=/usr/local/bin/cocass -P 10043 -p cocass -d /usr/local/lib/cocass -a "0.0.0.0" -m 200
 
 [Install]
 WantedBy=multi-user.target
