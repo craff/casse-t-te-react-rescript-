@@ -100,5 +100,5 @@ let parse = str => {
   }}
   switch fn(0,list{},Sum) {
   | (list{e},pos) if pos >= length(str) => e
-  | (stack,pos)                         => Js.log(stack); raise(Parse_error(pos))
+  | (stack,pos)                         => raise(Parse_error(pos))
   }}
