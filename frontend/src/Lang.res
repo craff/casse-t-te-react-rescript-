@@ -45,12 +45,12 @@ let undefined = choose(lang => switch lang {
 
 let link = choose(lang => switch lang {
   | "en" => Some("Link to share if you enjoyed this problem: ")
-  | "fr" => Some("Lien à partager si vous vous êtes bien amusé avec ce problem : ")
+  | "fr" => Some("Lien à partager si vous vous êtes bien amusé avec ce problème : ")
   | _    => None})
 
 let title = choose(lang => switch lang {
   | "en" => Some("A Corean puzzle")
-  | "fr" => Some("Un casse tête Corréen")
+  | "fr" => Some("Un casse tête Coréen")
   | _    => None})
 
 let description  = choose(lang => switch lang {
@@ -105,7 +105,7 @@ let check_solution = choose(lang => switch lang {
 
 let generate1 = choose(lang => switch lang {
   | "en" => Some("Generate a problem with a level")
-  | "fr" => Some("Genère un problem avec un niveau")
+  | "fr" => Some("Genère un problème avec un niveau")
   | _    => None})
 
 let generate2 = choose(lang => switch lang {
