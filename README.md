@@ -61,7 +61,9 @@ via the following API:
   ```
   A unique id and creation timestamp is stored in the data base.
   Example:
+  ```
   {"problem":7,
    "auto":false,
    "env":{"A":8,"B":2,"C":5,"D":1,"E":4,"F":9,"G":3,"H":7,"I":6}}
-  This request returns nothing.
+  ```
+  This request returns "ok".
