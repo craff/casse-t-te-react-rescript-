@@ -1,12 +1,17 @@
 open Lwt.Infix
 
-let db =
-  Caqti_lwt.connect
+let with_db fn =
+  Caqti_lwt.with_connection
     (Uri.of_string
-       "postgresql://cocass:63SrhmCmVkSxbAg@localhost")
-  >>= Caqti_lwt.or_fail |> Lwt_main.run
+       "postgresql://cocass:63SrhmCmVkSxbAg@localhost") fn
+  >>= Caqti_lwt.or_fail
 
-let init () =
+let lwt_ignore x =
+  Lwt.bind x (function
+	  | Ok _ -> Lwt.return ()
+          | Error _ -> Lwt.return ())
+
+let init () = with_db(fun db ->
   let query =
     [%rapper execute
         {sql|
@@ -19,7 +24,7 @@ let init () =
          |sql}]
   in
 
-  query () db >>= Caqti_lwt.or_fail |> Lwt_main.run;
+  query () db >>= Caqti_lwt.or_fail >>= fun () ->
 
   let query =
     [%rapper execute
@@ -29,7 +34,7 @@ let init () =
   in
 
   (* Type may already exists and IF NOT EXIST is not supported *)
-  (try query () db >>= Caqti_lwt.or_fail |> Lwt_main.run with _ -> ());
+  lwt_ignore (query () db) >>= fun () ->
 
   let query =
     [%rapper execute
@@ -46,9 +51,7 @@ let init () =
          |sql}]
   in
 
-  query () db >>= Caqti_lwt.or_fail |> Lwt_main.run;
-
-  ()
+  query () db) |> Lwt_main.run
 
 let get_string lbl s =
   match s with
@@ -120,7 +123,7 @@ module Env : Rapper.CUSTOM with type t = (string * int) array = struct
 
 end
 
-let add_problem problem =
+let add_problem problem = with_db(fun db ->
   match problem with
   | `Assoc l ->
      let left = get_string "problem(left)" (List.assoc "left" l) in
@@ -138,10 +141,10 @@ let add_problem problem =
 		         "domain"=%IntArray{domain}
               |sql}]
      in
-     let result = query ~left ~right ~domain db >>= Caqti_lwt.or_fail |> Lwt_main.run in
+     query ~left ~right ~domain db >>= Caqti_lwt.or_fail >>= fun result ->
      begin
        match result with
-       | Some x -> x
+       | Some x -> Lwt.return (Ok x)
        | _      ->
        let query = [%rapper get_one
               {sql|INSERT INTO problem ("left", "right", domain)
@@ -149,17 +152,17 @@ let add_problem problem =
                    RETURNING @int{id}
               |sql}]
        in
-       query ~left ~right ~domain db >>= Caqti_lwt.or_fail |> Lwt_main.run
+       query ~left ~right ~domain db
      end
-  | _ -> failwith "bad problem"
+  | _ -> failwith "bad problem") |> Lwt_main.run
 
-let get_problem id =
+let get_problem id = with_db(fun db ->
   let id = int_of_string id in
   let query = [%rapper get_opt
      {sql|SELECT @string{"left"}, @string{"right"}, @IntArray{domain}
           FROM problem WHERE id=%int{id} |sql}]
   in
-  let result = query ~id db >>= Caqti_lwt.or_fail |> Lwt_main.run in
+  query ~id db >>= Caqti_lwt.or_fail >>= fun result ->
   match result with
   | None -> failwith "no problem with this id"
   | Some (left,right,domain) ->
@@ -170,10 +173,9 @@ let get_problem id =
                  ("right",`String right);
                  ("domain",`List (List.map (fun x -> `Int x) domain))]
     in
-    let res = Yojson.Basic.to_string json in
-    res
+    Lwt.return (Ok (Yojson.Basic.to_string json))) |> Lwt_main.run
 
-let add_solution (solution:Yojson.Basic.t) =
+let add_solution (solution:Yojson.Basic.t) = with_db(fun db ->
   try match solution with
   | `Assoc l ->
      let env = List.assoc "env" l in
@@ -190,6 +192,6 @@ let add_solution (solution:Yojson.Basic.t) =
                    VALUES (%int{problem}, %bool{auto}, %Env{env})
               |sql}]
      in
-     query ~problem ~auto ~env db >>= Caqti_lwt.or_fail |> Lwt_main.run
-  | _ -> ()
-  with Exit -> failwith "bad solution"
+     query ~problem ~auto ~env db
+  | _ -> Lwt.return (Ok ())
+  with Exit -> failwith "bad solution") |> Lwt_main.run
