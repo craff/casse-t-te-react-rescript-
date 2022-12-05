@@ -7,50 +7,6 @@ module Button = {
     <button onClick> {React.string(text)} </button>
 }
 
-type level = Easy | Medium | Hard
-let currentLvl = ref(Hard)
-module SelectLvl = {
-   @react.component
-   let make = () => {
-     let onChange = evt => {
-       let value = ReactEvent.Form.target(evt)["value"]
-       switch value {
-       | "hard"   => currentLvl:=Hard
-       | "medium" => currentLvl:=Medium
-       | "easy"   => currentLvl:=Easy
-       | _        => assert(false)
-       }
-     }
-   <select onChange>
-     <option value="hard">{React.string(Lang.hard)}</option>
-     <option value="medium">{React.string(Lang.medium)}</option>
-     <option value="easy">{React.string(Lang.easy)}</option>
-   </select>
-   }
-}
-
-// A react component for the input holding the maximum number
-// of solutions when creating new problems
-// the parameter get is a reference to a function of type unit => int
-// that will give the current value
-// This allows to leek state from components.
-module MaxSol = {
-   @react.component
-   let make = (~get,~init) => {
-     let (text, setText) = React.useState(_ => Belt.Int.toString(init));
-     let onChange = evt => {
-       ReactEvent.Form.preventDefault(evt)
-       let value = ReactEvent.Form.target(evt)["value"]
-       setText(_prev => value);
-     }
-     let elt = <input onChange id="maxsol" value=text type_="number"/>
-     get := (() => switch Belt.Int.fromString(text) {
-                   | None    => 50
-		   | Some(n) => n })
-     elt
-   }
-}
-
 // A module for modifialble text.
 // We use references to lift the state outside the component
 // It seems to work, may may not be legal.
@@ -92,6 +48,7 @@ let (centerElt, setCenter) = {
 let currentProblem = ref(Problem.classical)
 let currentId      = ref(-1) // set in initPuzzle below
 let currentInputs  = ref(Js.Dict.empty())
+
 // Set the url link to the current puzzle
 let setLink = id => {
   // TODO: is there a cleaner way in Rescript
@@ -106,20 +63,6 @@ let setLink = id => {
   | Some(e) => Client.createRoot(e)
   }
   span->ReactDOM.Client.Root.render(React.string(url))
-}
-
-// main function creating the initial puzzle
-let initPuzzle = _ => {
-  let problem = currentProblem.contents
-  // The html for the puzzle
-  // - puzzle if the html element
-  // - inputs is a dictionnary holding the user's solution
-  let (puzzle,inputs) = HtmlExpr.toHtml(problem.equation)
-  // This send the default pb in the rare case it is not in the data base
-  // and fetch is id to update the link.
-  Api.sendProblem(problem, id => {currentId:=id; setLink(id)})
-  currentInputs := inputs
-  puzzle
 }
 
 // was the current puzzle auto solved (to not send the solution in that case)
@@ -151,7 +94,7 @@ const queryParameters = new URLSearchParams(window.location.search)
 `)
 let requestProblemId : Js.Nullable.t<int> = %raw(`queryParameters.get("id")`)
 let requestProblemId = Js.Nullable.toOption(requestProblemId)
-switch (requestProblemId) {
+let initPuzzle = _ => switch (requestProblemId) {
   | Some(id) =>
     let setProblemCb   = (pb,id) => {
       currentProblem := pb
@@ -160,8 +103,14 @@ switch (requestProblemId) {
       setPuzzle()
     }
     Api.getProblem(id,setProblemCb)
-  | None => ()
+  | None =>
+    let problem = currentProblem.contents
+    // This send the default pb in the rare case it is not in the data base
+    // and fetch is id to update the link.
+    Api.sendProblem(problem, id => {currentId:=id; setLink(id)})
+    setPuzzle()
 }
+%%raw(`document.body.onload=initPuzzle`)
 
 // the text holding the various message of the page
 let (resultElt, setResult) = {
@@ -234,6 +183,50 @@ let check = (_event) => {
 // a ref to a function to get the maximum number of solutions
 // this ref is updated by the input element
 let getMaxSol = ref (() => 50)
+// A react component for the input holding the maximum number
+// of solutions when creating new problems
+// the parameter get is a reference to a function of type unit => int
+// that will give the current value
+// This allows to leek state from components.
+module MaxSol = {
+   @react.component
+   let make = (~get,~init) => {
+     let (text, setText) = React.useState(_ => Belt.Int.toString(init));
+     let onChange = evt => {
+       ReactEvent.Form.preventDefault(evt)
+       let value = ReactEvent.Form.target(evt)["value"]
+       setText(_prev => value);
+     }
+     let elt = <input onChange id="maxsol" value=text type_="number"/>
+     get := (() => switch Belt.Int.fromString(text) {
+                   | None    => 50
+		   | Some(n) => n })
+     elt
+   }
+}
+
+// Set up the menu to select the level of generated puzzle
+type level = Easy | Medium | Hard
+let generateLvl = ref(Hard)
+module SelectLvl = {
+   @react.component
+   let make = () => {
+     let onChange = evt => {
+       let value = ReactEvent.Form.target(evt)["value"]
+       switch value {
+       | "hard"   => generateLvl:=Hard
+       | "medium" => generateLvl:=Medium
+       | "easy"   => generateLvl:=Easy
+       | _        => assert(false)
+       }
+     }
+   <select onChange>
+     <option value="hard">{React.string(Lang.hard)}</option>
+     <option value="medium">{React.string(Lang.medium)}</option>
+     <option value="easy">{React.string(Lang.easy)}</option>
+   </select>
+   }
+}
 
 // callback to search for a new puzzle
 // TODO : create a "cancel" button
@@ -246,7 +239,7 @@ let newPuzzle = (_event) => {
     let maxsol = getMaxSol.contents()
     // Puzzle.generate is a promise that call timeout not to block the
     // navigator.
-    let (size,m) = switch currentLvl.contents {
+    let (size,m) = switch generateLvl.contents {
     | Hard   => (13,9)
     | Medium => (11,7)
     | Easy   => (9 ,5)
@@ -287,7 +280,7 @@ let elt = {
       <MaxSol init=50 get=getMaxSol/>
       <Button onClick=solvePuzzle text=Lang.solve/>
     </div>
-    <div id="puzzle">{initPuzzle()}</div>
+    <div id="puzzle"></div>
     <div className="footer">
       {resultElt}
     </div>
