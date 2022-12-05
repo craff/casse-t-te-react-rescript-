@@ -56,12 +56,13 @@ let init () = with_db(fun db ->
 let get_string lbl s =
   match s with
   | `String s -> s
-  | _       -> failwith ("error: " ^ lbl)
+  | _         -> failwith ("error: " ^ lbl)
 
 let get_int lbl s =
   match s with
-  | `Int s -> s
-  | _       -> failwith ("error: " ^ lbl)
+  | `Int s    -> s
+  | `String s -> int_of_string s
+  | _         -> failwith ("error: " ^ lbl)
 
 let get_bool lbl s =
   match s with
