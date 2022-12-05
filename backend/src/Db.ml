@@ -4,7 +4,7 @@ let with_db fn =
   Caqti_lwt.with_connection
     (Uri.of_string
        "postgresql://cocass:63SrhmCmVkSxbAg@localhost") fn
-  >>= Caqti_lwt.or_fail
+  >>= Caqti_lwt.or_fail |> Lwt_main.run
 
 let lwt_ignore x =
   Lwt.bind x (function
@@ -51,7 +51,7 @@ let init () = with_db(fun db ->
          |sql}]
   in
 
-  query () db) |> Lwt_main.run
+  query () db)
 
 let get_string lbl s =
   match s with
@@ -154,7 +154,7 @@ let add_problem problem = with_db(fun db ->
        in
        query ~left ~right ~domain db
      end
-  | _ -> failwith "bad problem") |> Lwt_main.run
+  | _ -> failwith "bad problem")
 
 let get_problem id = with_db(fun db ->
   let id = int_of_string id in
@@ -173,7 +173,7 @@ let get_problem id = with_db(fun db ->
                  ("right",`String right);
                  ("domain",`List (List.map (fun x -> `Int x) domain))]
     in
-    Lwt.return (Ok (Yojson.Basic.to_string json))) |> Lwt_main.run
+    Lwt.return (Ok (Yojson.Basic.to_string json)))
 
 let add_solution (solution:Yojson.Basic.t) = with_db(fun db ->
   try match solution with
@@ -194,4 +194,4 @@ let add_solution (solution:Yojson.Basic.t) = with_db(fun db ->
      in
      query ~problem ~auto ~env db
   | _ -> Lwt.return (Ok ())
-  with Exit -> failwith "bad solution") |> Lwt_main.run
+  with Exit -> failwith "bad solution")
