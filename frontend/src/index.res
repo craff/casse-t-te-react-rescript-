@@ -199,11 +199,7 @@ let solvePuzzle = (_event) => {
 let check = (_event) => {
     open Belt.Map.String
     // an array to check that all integers are used
-    let m = switch currentLvl.contents {
-    | Hard   => 9
-    | Medium => 7
-    | Easy   => 5
-    }
+    let m = Belt.Set.Int.size(currentProblem.contents.domain)
     let used = Belt.Array.make(m,false)
     try {
       // we scan the user inputs to produce an environment
