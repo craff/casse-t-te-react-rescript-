@@ -2,7 +2,7 @@
  (name backend)
  (modules :standard)
  (preprocess (pps pacomb.ppx ppx_rapper))
- (libraries tiny_httpd
+ (libraries tiny_httpd tiny_httpd_domains
             caqti ppx_rapper_lwt ppx_rapper.runtime caqti-driver-postgresql
 	    yojson
 	    pacomb))

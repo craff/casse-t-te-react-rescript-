@@ -40,9 +40,13 @@ let pexact str =
 
 let current_server = ref None
 
+let num_domains = Domain.recommended_domain_count ()
+let pool = Domainslib.Task.setup_pool ~num_domains ()
+
 let () =
   S._enable_debug true;
-  let server = S.create ~max_connections:Options.maxc (*~new_thread*)
+  let new_thread = Tiny_httpd_domains.new_thread pool in
+  let server = S.create ~max_connections:Options.maxc ~new_thread
                         ~addr:Options.addr ~port:Options.port () in
   current_server := Some server;
   (* serving frontend directory *)
@@ -55,7 +59,7 @@ let () =
   S.add_route_handler server (pexact "send_solution") send_solution;
   Printf.eprintf "listening on http://%s:%d\n%!"
     (S.addr server) (S.port server);
-  let f () = match S.run server with
+  let f () = match Tiny_httpd_domains.run pool server with
     | Ok () -> ()
     | Error e -> Printf.eprintf "unexpected toplevel exception: %s"
                    (Printexc.to_string e)
