@@ -1,7 +1,7 @@
 let prefix = ref ""
 let port = ref 8080
 let maxc = ref 5
-let static_dir = ref ""
+let docroot = ref ""
 let addr = ref "127.0.0.1"
 
 let spec =
@@ -10,7 +10,7 @@ let spec =
        "fix the prefix of the url (no \"/\" allowed) (defaut \"\")");
       ("-P", Set_int port, "the port to listen to (default 8080)");
       ("-a", Set_string addr, "the address to listen to (default 127.0.0.1)");
-      ("-d", Set_string static_dir, "the location of static files (default \"\")");
+      ("-d", Set_string docroot, "the location of static files (default \"\")");
       ("-m", Set_int maxc, "maximum allowed connections (default 5)");
   ]
 
@@ -25,5 +25,6 @@ let () = Arg.parse spec anon_fun usage
 let prefix = !prefix
 let port = !port
 let maxc = !maxc
-let static_dir = !static_dir
+let docroot = !docroot
 let addr = !addr
+let prefix = if prefix <> "" && prefix.[0] <> '/' then "/" ^ prefix else prefix

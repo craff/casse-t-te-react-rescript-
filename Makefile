@@ -1,7 +1,13 @@
 
-all:
-	cd frontend && npm run build && npm run deploy
+all: backend frontend
+
+.PHONY: backend
+backend:
 	cd backend && dune build
+
+.PHONY: frontend
+frontend:
+	cd frontend && npm run build && npm run deploy
 
 clean:
 	cd frontend && npm run clean
@@ -21,3 +27,6 @@ install:
 	install cocass.service /etc/systemd/system/
 	- mkdir /var/log/cocass
 	chown cocass:cocass -R /var/log/cocass
+	- rm /var/log/cocass/cocass.*
+	systemctl daemon-reload
+	systemctl restart cocass

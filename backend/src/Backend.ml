@@ -1,67 +1,60 @@
-
-module S = Tiny_httpd
-module D = Tiny_httpd_dir
+open Http_util
+module H = Http
+module S = Cohttp_eio.Server
 
 let () = Db.init()
 
-let fail msg e =
-  Printf.eprintf "%s: %s\n%!" msg (Printexc.to_string e);
-  S.Response.fail ~code:500 "%s:%s" msg (Printexc.to_string e)
-
 (* API requests *)
-let send_problem req =
-  try
-    let problem = Yojson.Basic.from_string(req.S.Request.body) in
-    let id = Db.add_problem problem in
-    S.Response.make_string (Ok (string_of_int id))
-  with e -> fail "Error in send_problem" e
+let send_problem _params body =
+  let problem = match body with
+  | Some body -> Yojson.Basic.from_string body
+  | None -> raise Not_found
+  in
+  let id = Db.add_problem problem in
+  S.text_response (string_of_int id)
 
-let get_problem req =
-  try
-    let query = S.Request.query req in
-    let id = List.assoc "id" query in
+let get_problem params _body =
+  match List.assoc "id" params with
+  | []      -> raise Not_found
+  | id :: _ ->
     let pb = Db.get_problem id in
-    S.Response.make_string (Ok pb)
-  with e -> fail "Error in get_problem" e
+    S.text_response pb
 
-let send_solution req =
-  try
-    let solution = Yojson.Basic.from_string(req.S.Request.body) in
-    Db.add_solution solution;
-    S.Response.make_string (Ok "ok")
-  with e -> fail "Error in send_solution" e
+let send_solution _params body =
+  let solution = match body with
+  | Some body -> Yojson.Basic.from_string body
+  | None -> raise Not_found
+  in
+  Db.add_solution solution;
+  S.text_response "ok"
 
 open Options
 
-let pexact str =
-  let open S.Route in
-  if prefix = "" then exact str @/ return
-  else exact prefix @/ exact str @/ return
-
-let current_server = ref None
-
-let num_domains = Domain.recommended_domain_count ()
-let pool = Domainslib.Task.setup_pool ~num_domains ()
+let domains = Domain.recommended_domain_count ()
 
 let () =
-  S._enable_debug true;
-  let new_thread = Tiny_httpd_domains.new_thread pool in
-  let server = S.create ~max_connections:Options.maxc ~new_thread
-                        ~addr:Options.addr ~port:Options.port () in
-  current_server := Some server;
-  (* serving frontend directory *)
-  let dir = Options.static_dir in
-  let config = D.config ~dir_behavior:Index () in (* default config is what we want *)
-  D.add_dir_path ~config ~dir ~prefix server;
-  (* serving API requests *)
-  S.add_route_handler server (pexact "send_problem") send_problem;
-  S.add_route_handler server (pexact "get_problem") get_problem;
-  S.add_route_handler server (pexact "send_solution") send_solution;
-  Printf.eprintf "listening on http://%s:%d\n%!"
-    (S.addr server) (S.port server);
-  let f () = match Tiny_httpd_domains.run pool server with
-    | Ok () -> ()
-    | Error e -> Printf.eprintf "unexpected toplevel exception: %s"
+  let handler (request,buf,_addr) =
+    try
+      Format.eprintf "%a\n%!" H.Request.pp request;
+      let uri = Uri.of_string request.resource in
+      let path = remove_prefix (Uri.path uri) in
+      let uri = Uri.with_uri ~path:(Some path) uri in
+      let params = Uri.query uri in
+      let deflate = allow_deflate request in
+      Printf.eprintf "deflate: %b\n%!" deflate;
+      let body = S.read_fixed request buf in
+      match path with
+      | "/send_problem" -> send_problem params body
+      | "/get_problem" -> get_problem params body
+      | "/send_solution" -> send_solution params body
+      | "" | "/" -> redirect_index uri
+      | _ -> send_file deflate uri
+    with _ -> S.not_found_response
+  in
+
+  let f () =
+    try Eio_main.run @@ fun env -> S.run ~domains ~port env handler
+    with e -> Printf.eprintf "unexpected toplevel exception: %s"
                    (Printexc.to_string e)
   in
   while true do
