@@ -1,4 +1,4 @@
-# A small puzzle to test (ReScript + React) + (OCaml + tiny_httpd + caqti)
+# A small puzzle to test (ReScript + React) + (OCaml + Cohttp-eio + caqti)
 
 ## Compilation of the frontend:
 
@@ -18,7 +18,7 @@ The static file needed to run the front end are in frontend/dist
 Install ocaml 4.14.0 via opam and run
 ```
 cd backend
-opam install dune tiny_httpd caqti ppx_rapper_lwt caqti-driver-postgresql yojson pacomb
+opam install dune http uri eio eio_main cohttp-eio caqti ppx_rapper_lwt ppx_rapper.runtime caqti-driver-postgresql yojson magic-mime pacomb zip
 dune build
 ```
 
