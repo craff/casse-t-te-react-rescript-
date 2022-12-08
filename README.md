@@ -18,7 +18,7 @@ The static file needed to run the front end are in frontend/dist
 Install ocaml 4.14.0 via opam and run
 ```
 cd backend
-opam install dune http uri eio eio_main cohttp-eio caqti ppx_rapper_lwt ppx_rapper.runtime caqti-driver-postgresql yojson magic-mime pacomb zip
+opam install dune http uri eio eio_main cohttp-eio caqti ppx_rapper_lwt caqti-driver-postgresql yojson magic-mime pacomb camlzip
 dune build
 ```
 

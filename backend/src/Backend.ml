@@ -30,8 +30,6 @@ let send_solution _params body =
 
 open Options
 
-let domains = Domain.recommended_domain_count ()
-
 let () =
   let handler (request,buf,_addr) =
     try

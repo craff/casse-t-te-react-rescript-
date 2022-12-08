@@ -1,10 +1,22 @@
 open Lwt.Infix
 
+let db_pool : (Domain.id,
+               (Caqti_lwt.connection, Caqti_error.t) Caqti_lwt.Pool.t) Hashtbl.t
+  = Hashtbl.create 16
+
+let get_pool () =
+  let domain = Domain.self () in
+  try Hashtbl.find db_pool domain
+  with Not_found ->
+     let pool = Caqti_lwt.connect_pool ~max_size:Options.max_pool_size
+       (Uri.of_string "postgresql://cocass:63SrhmCmVkSxbAg@localhost")
+     in
+     match pool with
+     | Ok pool -> Hashtbl.add db_pool domain pool; pool
+     | Error _  -> raise Not_found
+
 let with_db fn =
-  Caqti_lwt.with_connection
-    (Uri.of_string
-       "postgresql://cocass:63SrhmCmVkSxbAg@localhost") fn
-  >>= Caqti_lwt.or_fail |> Lwt_main.run
+  Caqti_lwt.Pool.use fn (get_pool ())  >>= Caqti_lwt.or_fail |> Lwt_main.run
 
 let lwt_ignore x =
   Lwt.bind x (function
